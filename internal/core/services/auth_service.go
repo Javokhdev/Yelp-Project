@@ -1,8 +1,8 @@
 package services
 
 import (
-	"yalp/internal/domain"
-	"yalp/internal/core/repositories"
+	"github.com/Javokhdev/Yelp-Project/internal/domain"
+	"github.com/Javokhdev/Yelp-Project/internal/core/repositories"
 )
 
 type AuthService struct {

@@ -1,4 +1,4 @@
-module yalp
+module github.com/Javokhdev/Yelp-Project
 
 go 1.22.1
 

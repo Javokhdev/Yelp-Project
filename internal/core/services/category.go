@@ -1,8 +1,8 @@
 package services
 
 import (
-	"yalp/internal/core/repositories"
-	"yalp/internal/domain"
+	"github.com/Javokhdev/Yelp-Project/internal/core/repositories"
+	"github.com/Javokhdev/Yelp-Project/internal/domain"
 )
 
 type CategoryService struct {

@@ -2,7 +2,7 @@ package repositories
 
 import (
 	"database/sql"
-	domain "yalp/internal/domain"
+	domain "github.com/Javokhdev/Yelp-Project/internal/domain"
 
 	"github.com/google/uuid"
 )

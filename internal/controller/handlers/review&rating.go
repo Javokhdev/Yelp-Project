@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"net/http"
-	"yalp/internal/core/services"
-	"yalp/internal/domain"
+	"github.com/Javokhdev/Yelp-Project/internal/core/services"
+	"github.com/Javokhdev/Yelp-Project/internal/domain"
 
 	"github.com/gin-gonic/gin"
 )

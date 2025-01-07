@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	_ "github.com/lib/pq"
-	"yalp/internal/config"
+	"github.com/Javokhdev/Yelp-Project/config"
 )
 
 func Connect(cnf *config.Config) (*sql.DB, error) {

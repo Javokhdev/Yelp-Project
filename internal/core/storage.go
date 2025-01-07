@@ -1,6 +1,6 @@
 package storage
 
-import "yalp/internal/domain"
+import "github.com/Javokhdev/Yelp-Project/internal/domain"
 
 type BusinessInterface interface {
 	CreateBusiness(business *domain.Business) (string, error)

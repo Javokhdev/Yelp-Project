@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 
-	"yalp/internal/config"
-	"yalp/internal/app"
+	"github.com/Javokhdev/Yelp-Project/config"
+	"github.com/Javokhdev/Yelp-Project/internal/app"
 )
 
 func main() {

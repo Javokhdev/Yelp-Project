@@ -3,13 +3,13 @@ package app
 import (
 	"log"
 
-	_ "yalp/api/docs" // Import Swagger docs
-	"yalp/internal/config"
-	"yalp/internal/controller/handlers"
-	"yalp/internal/core/repositories"
-	"yalp/internal/core/services"
-	"yalp/pkg/db"
-	"yalp/pkg/logger"
+	_ "github.com/Javokhdev/Yelp-Project/api/docs" // Import Swagger docs
+	"github.com/Javokhdev/Yelp-Project/config"
+	"github.com/Javokhdev/Yelp-Project/internal/controller/handlers"
+	"github.com/Javokhdev/Yelp-Project/internal/core/repositories"
+	"github.com/Javokhdev/Yelp-Project/internal/core/services"
+	"github.com/Javokhdev/Yelp-Project/pkg/db"
+	"github.com/Javokhdev/Yelp-Project/pkg/logger"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
