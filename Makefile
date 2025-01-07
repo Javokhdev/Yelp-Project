@@ -1,44 +1,87 @@
-# Include .env if exists
--include .env
+include .env.example
 export
 
-CURRENT_DIR := $(shell pwd)
-POSTGRES_USER := postgres
-POSTGRES_PASSWORD := root
-POSTGRES_HOST := localhost
-POSTGRES_PORT := 5432
-POSTGRES_DATABASE := yalp_db
+LOCAL_BIN:=$(CURDIR)/bin
+PATH:=$(LOCAL_BIN):$(PATH)
 
-DB_URL := postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DATABASE}?sslmode=disable
+# HELP =================================================================================================================
+# This will output the help for each task
+# thanks to https://marmelab.com/blog/2016/02/29/auto-documented-makefile.html
+.PHONY: help
 
-# Run service
+help: ## Display this help screen
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+
+compose-up: ### Run docker-compose
+	docker-compose up --build -d postgres rabbitmq && docker-compose logs -f
+.PHONY: compose-up
+
+compose-up-integration-test: ### Run docker-compose with integration test
+	docker-compose up --build --abort-on-container-exit --exit-code-from integration
+.PHONY: compose-up-integration-test
+
+compose-down: ### Down docker-compose
+	docker-compose down --remove-orphans
+.PHONY: compose-down
+
+swag-v1: ### swag init
+	swag init -g internal/controller/http/v1/router.go
+
+.PHONY: swag-v1
+
+run: swag-v1 ### swag run
+	go mod tidy && go mod download && \
+	DISABLE_SWAGGER_HTTP_HANDLER='' GIN_MODE=debug CGO_ENABLED=0 go run -tags migrate ./cmd/app
 .PHONY: run
-run:
-	go run cmd/main.go
 
-# Generate protobuf
-.PHONY: proto-gen
-proto-gen:
-	./scripts/gen_proto.sh
+docker-rm-volume: ### remove docker volume
+	docker volume rm go-clean-template_pg-data
+.PHONY: docker-rm-volume
 
-# Database migrations
-.PHONY: migrate migrate-up migrate-down migrate-force migrate-file
-migrate:
-	migrate -source file://migrations -database ${DB_URL} up
+linter-golangci: ### check by golangci linter
+	golangci-lint run
+.PHONY: linter-golangci
 
-migrate-up:
-	migrate -path internal/db/migrations -database ${DB_URL} -verbose up
+linter-hadolint: ### check by hadolint linter
+	git ls-files --exclude='Dockerfile*' --ignored | xargs hadolint
+.PHONY: linter-hadolint
 
-migrate-down:
-	migrate -path internal/db/migrations -database ${DB_URL} -verbose down
+linter-dotenv: ### check by dotenv linter
+	dotenv-linter
+.PHONY: linter-dotenv
 
-migrate-force:
-	migrate -path internal/db/migrations -database ${DB_URL} -verbose force 1
+test: ### run test
+	go test -v -cover -race ./internal/...
+.PHONY: test
 
-migrate-file:
-	migrate create -ext sql -dir internal/db/migrations -seq yalp_create_psql
+integration-test: ### run integration-test
+	go clean -testcache && go test -v ./integration-test/...
+.PHONY: integration-test
 
-# Swagger initialization
-.PHONY: swag-init
-swag-gen:
-	~/go/bin/swag init -g ./internal/app/app.go -o api/docs force 1
+mock: ### run mockgen
+	mockgen -source ./internal/usecase/interfaces.go -package usecase_test > ./internal/usecase/mocks_test.go
+.PHONY: mock
+
+migrate-create:  ### create new migration
+	migrate create -ext sql -dir migrations 'migrate_name'
+.PHONY: migrate-create
+
+migrate-up: ### migration up
+	migrate -path migrations -database '$(PG_URL)?sslmode=disable' up
+.PHONY: migrate-up
+
+bin-deps:
+	GOBIN=$(LOCAL_BIN) go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+	GOBIN=$(LOCAL_BIN) go install github.com/golang/mock/mockgen@latest
+
+run-db: 
+	docker network create udevslabs-twitter & docker-compose -f ./devops/docker-compose.yml up -d 
+
+stop-db:
+	docker-compose -f ./devops/docker-compose.yml down
+
+run-app: swag-v1
+	docker-compose up -d --build
+
+stop-app: 
+	docker compose down

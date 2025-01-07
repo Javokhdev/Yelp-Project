@@ -1,56 +1,87 @@
 package config
 
 import (
-	"log"
-	"os"
+	"fmt"
 
-	"github.com/joho/godotenv"
+	"github.com/ilyakaznacheev/cleanenv"
 )
 
-type Config struct {
-	ServerPort        string
-	DB_HOST           string
-	DB_PORT           string
-	DB_USER           string
-	DB_PASSWORD       string
-	DB_NAME           string
-	REDIS_HOST        string
-	REDIS_PORT        string
-	MINIO_ENDPOINT    string
-	MINIO_ACCESS_KEY  string
-	MINIO_SECRET_KEY  string
-	MINIO_BUCKET_NAME string
-	JWT_SECRET        string
-}
+type (
+	// Config -.
+	Config struct {
+		App   `yaml:"app"`
+		HTTP  `yaml:"http"`
+		Log   `yaml:"logger"`
+		PG    `yaml:"postgres"`
+		JWT   `yaml:"jwt"`
+		Redis `yaml:"redis"`
+		Gmail `yaml:"gmail"`
+		MinIO `yaml:"minio"`
+	}
 
-func LoadConfig() (*Config, error) {
-	err := godotenv.Load()
+	// App -.
+	App struct {
+		Name    string `env-required:"true" yaml:"name"    env:"APP_NAME"`
+		Version string `env-required:"true" yaml:"version" env:"APP_VERSION"`
+	}
+
+	// HTTP -.
+	HTTP struct {
+		Port string `env-required:"true" yaml:"port" env:"HTTP_PORT"`
+	}
+
+	// Log -.
+	Log struct {
+		Level string `env-required:"true" yaml:"log_level"   env:"LOG_LEVEL"`
+	}
+
+	// PG -.
+	PG struct {
+		PoolMax int    `env-required:"true" yaml:"pool_max" env:"PG_POOL_MAX"`
+		URL     string `env-required:"true"                 env:"PG_URL"`
+	}
+
+	// JWT -.
+	JWT struct {
+		Secret string `env-required:"true" yaml:"secret" env:"JWT_SECRET"`
+	}
+
+	// Redis -.
+	Redis struct {
+		RedisHost string `env-required:"true" yaml:"host" env:"REDIS_HOST"`
+		RedisPort int    `env-required:"true" yaml:"port" env:"REDIS_PORT"`
+	}
+
+	// Gmail -.
+	Gmail struct {
+		Email     string `env-required:"true" yaml:"email" env:"EMAIL"`
+		EmailPass string `env-required:"true" yaml:"email_pass" env:"EMAIL_PASS"`
+		Host      string `env-required:"true" yaml:"host" env:"SMTP_HOST"`
+		Port      string    `env-required:"true" yaml:"port" env:"SMTP_PORT"`
+	}
+
+	// MinIO -.
+	MinIO struct {
+		Endpoint   string `env-required:"true" yaml:"endpoint" env:"MINIO_ENDPOINT"`
+		AccessKey  string `env-required:"true" yaml:"access_key" env:"MINIO_ACCESS_KEY"`
+		SecretKey  string `env-required:"true" yaml:"secret_key" env:"MINIO_SECRET_KEY"`
+		BucketName string `env-required:"true" yaml:"bucket_name" env:"MINIO_BUCKET_NAME"`
+	}
+)
+
+// NewConfig returns app config.
+func NewConfig() (*Config, error) {
+	cfg := &Config{}
+
+	err := cleanenv.ReadConfig("./config/config.yml", cfg)
 	if err != nil {
-		log.Println("No .env file found")
+		return nil, fmt.Errorf("config error: %w", err)
 	}
 
-	config := &Config{
-		ServerPort:        getEnv("SERVER_PORT", "8080"),
-		DB_HOST:           getEnv("DB_HOST", "localhost"),
-		DB_PORT:           getEnv("DB_PORT", "5432"),
-		DB_USER:           getEnv("DB_USER", "postgres"),
-		DB_PASSWORD:       getEnv("DB_PASSWORD", "root"),
-		DB_NAME:           getEnv("DB_NAME", "yalp_db"),
-		REDIS_HOST:        getEnv("REDIS_HOST", "localhost"),
-		REDIS_PORT:        getEnv("REDIS_PORT", "6379"),
-		MINIO_ENDPOINT:    getEnv("MINIO_ENDPOINT", "localhost:9002"),
-		MINIO_ACCESS_KEY:  getEnv("MINIO_ACCESS_KEY", "minioadmin"),
-		MINIO_SECRET_KEY:  getEnv("MINIO_SECRET_KEY", "miniopassword"),
-		MINIO_BUCKET_NAME: getEnv("MINIO_BUCKET_NAME", "images"),
-		JWT_SECRET:        getEnv("JWT_SECRET", "cd46911f94334c65301d4086f14f0eb29ef7a4ecb3aba5ced1e7ec9760a4356c74822dea0bbe2ff636a3bd1483fd9472b7f016ddffe91603f0b32854143d173c"),
+	err = cleanenv.ReadEnv(cfg)
+	if err != nil {
+		return nil, err
 	}
 
-	return config, nil
-}
-
-func getEnv(key, defaultValue string) string {
-	if value, exists := os.LookupEnv(key); exists {
-		return value
-	}
-	return defaultValue
+	return cfg, nil
 }

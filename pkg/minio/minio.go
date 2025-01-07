@@ -18,9 +18,10 @@ type MinioClient struct {
 	BucketName string
 }
 
-func NewMinioClient(cnf *config.Config) (*MinioClient, error) {
-	minioClient, err := minio.New(cnf.MINIO_ENDPOINT, &minio.Options{
-		Creds:  credentials.NewStaticV4(cnf.MINIO_ACCESS_KEY, cnf.MINIO_SECRET_KEY, ""),
+func NewMinioClient(cfg *config.Config) (*MinioClient, error) {
+	// Initialize MinIO client using config values
+	minioClient, err := minio.New(cfg.MinIO.Endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(cfg.MinIO.AccessKey, cfg.MinIO.SecretKey, ""),
 		Secure: false,
 	})
 	if err != nil {
@@ -29,7 +30,7 @@ func NewMinioClient(cnf *config.Config) (*MinioClient, error) {
 
 	client := &MinioClient{
 		Client:     minioClient,
-		BucketName: cnf.MINIO_BUCKET_NAME,
+		BucketName: cfg.MinIO.BucketName,
 	}
 
 	// Create bucket if it doesn't exist
@@ -90,11 +91,9 @@ func (mc *MinioClient) UploadFile(ctx context.Context, fileName string, filePath
 		return "", fmt.Errorf("failed to upload file: %v", err)
 	}
 
-	// minioURL := fmt.Sprintf("http://13.203.2.177:9002/%s/%s", mc.BucketName, fileName)
 	serverHost := "medias"
 	domain := "booknest.uz"
 	minioURL := fmt.Sprintf("https://%s.%s/%s/%s", serverHost, domain, mc.BucketName, fileName)
 
-	
 	return minioURL, nil
 }

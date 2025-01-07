@@ -1,77 +1,69 @@
+// Package app configures and runs application.
 package app
 
 import (
-	"log"
+	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 
-	_ "github.com/Javokhdev/Yelp-Project/api/docs" // Import Swagger docs
-	"github.com/Javokhdev/Yelp-Project/config"
-	"github.com/Javokhdev/Yelp-Project/internal/controller/handlers"
-	"github.com/Javokhdev/Yelp-Project/internal/core/repositories"
-	"github.com/Javokhdev/Yelp-Project/internal/core/services"
-	"github.com/Javokhdev/Yelp-Project/pkg/db"
-	"github.com/Javokhdev/Yelp-Project/pkg/logger"
-
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
+
+	rediscache "github.com/golanguzb70/redis-cache"
+	"github.com/Javokhdev/Yelp-Project/config"
+	v1 "github.com/Javokhdev/Yelp-Project/internal/controller/http/v1"
+	"github.com/Javokhdev/Yelp-Project/internal/usecase"
+	"github.com/Javokhdev/Yelp-Project/pkg/httpserver"
+	"github.com/Javokhdev/Yelp-Project/pkg/logger"
+	"github.com/Javokhdev/Yelp-Project/pkg/postgres"
 )
 
-// @title Yalp API
-// @version 1.0
-// @description API documentation for Yalp
-// @BasePath /api/v1
+// Run creates objects via constructors.
 func Run(cfg *config.Config) {
-	infoLog, errLog := logger.InitLogger()
+	l := logger.New(cfg.Log.Level)
 
-	// Postgres Connection
-	db, err := db.Connect(cfg)
+	// Repository
+	pg, err := postgres.New(cfg.PG.URL, postgres.MaxPoolSize(cfg.PG.PoolMax))
 	if err != nil {
-		errLog.Println("Can't connect to database, details:", err, log.Ldate|log.Ltime|log.Lshortfile)
+		l.Fatal(fmt.Errorf("app - Run - postgres.New: %w", err))
 	}
-	defer db.Close()
-	infoLog.Println("Connected to Postgres")
+	defer pg.Close()
 
-	userRepo := repositories.NewUserRepo(db)
-	businessRepo := repositories.NewBusinessRepo(db)
-	reviewRepo := repositories.NewReviewRepo(db)
-	category := repositories.NewCategoryRepo(db)
+	// Use case
+	useCase := usecase.New(pg, cfg, l)
 
-	userSvc := services.NewAuthService(*userRepo)
-	businessSvc := services.NewBusinessService(*businessRepo)
-	reviewSvc := services.NewReviewAndRatingService(*reviewRepo)
-	categorySvc := services.NewCategoryService(*category)
-
-	authHandler := handlers.NewAuthHandler(userSvc)
-	businessHandler := handlers.NewBusinessHandler(businessSvc)
-	reviewHandler := handlers.NewReviewHandler(reviewSvc)
-	categoryHandler := handlers.NewCategoryHandler(categorySvc)
-
-	router := gin.Default()
-	router.Use(cors.Default())
-
-	// Swagger endpoint
-	router.GET("/api/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-
-	v1 := router.Group("/api/v1")
-	{
-		v1.POST("/auth/register", authHandler.RegisterUser)
-		v1.GET("/auth/:userID", authHandler.GetUserByID)
-		v1.GET("/auth", authHandler.GetAllUsers)
-		v1.DELETE("/auth/:userID", authHandler.DeleteUser)
-		v1.POST("/business", businessHandler.CreateBusiness)
-		v1.GET("/business", businessHandler.GetAllBusinesses)
-		v1.GET("/business/:businessID", businessHandler.GetBusinessByID)
-		v1.POST("/business/:businessID/reviews", reviewHandler.CreateReview)
-		v1.GET("/business/:businessID/reviews/:reviewID", reviewHandler.GetReviewByID)
-		v1.PUT("/business/:businessID/reviews/:reviewID", reviewHandler.UpdateReview)
-		v1.DELETE("/business/:businessID/reviews/:reviewID", reviewHandler.DeleteReview)
-		v1.GET("/business/:businessID/reviews", reviewHandler.GetAllReviews)
-		v1.POST("/categories", categoryHandler.CreateCategory)
-		v1.GET("/categories", categoryHandler.GetAllCategories)
-		v1.GET("/categories/:categoryID", categoryHandler.GetCategoryByID)
-		v1.DELETE("/categories/:categoryID", categoryHandler.DeleteCategory)
+	// redis
+	redis, err := rediscache.New(&rediscache.Config{
+		RedisHost: cfg.Redis.RedisHost,
+		RedisPort: cfg.Redis.RedisPort,
+	})
+	if err != nil {
+		l.Fatal(fmt.Errorf("app - Run - rediscache.New: %w", err))
 	}
 
-	router.Run(":8080")
+	// HTTP Server
+	handler := gin.New()
+	v1.NewRouter(handler, l, cfg, useCase, redis)
+
+	httpServer := httpserver.New(handler, httpserver.Port(cfg.HTTP.Port))
+
+	l.Info(fmt.Sprintf("app - Run - httpServer: %s", cfg.HTTP.Port))
+
+	// Waiting signal
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
+
+	select {
+	case s := <-interrupt:
+		l.Info("app - Run - signal: " + s.String())
+	case err = <-httpServer.Notify():
+		l.Error(fmt.Errorf("app - Run - httpServer.Notify: %w", err))
+	}
+
+	// Shutdown
+	err = httpServer.Shutdown()
+	if err != nil {
+		l.Error(fmt.Errorf("app - Run - httpServer.Shutdown: %w", err))
+	}
 }
+
