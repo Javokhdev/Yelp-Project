@@ -47,7 +47,7 @@ func (r *CategoryRepo) CreateCategory(ctx context.Context, category *entity.Cate
 }
 
 // GetCategoryByID retrieves a category by its ID.
-func (r *CategoryRepo) GetCategoryByID(ctx context.Context, categoryID string) (*entity.Category, error) {
+func (r *CategoryRepo) GetCategoryByID(ctx context.Context, categoryID entity.Id) (*entity.Category, error) {
 	var category entity.Category
 
 	query, args, err := r.pg.Builder.
@@ -115,7 +115,7 @@ func (r *CategoryRepo) UpdateCategory(ctx context.Context, category *entity.Cate
 }
 
 // DeleteCategory deletes a category by its ID.
-func (r *CategoryRepo) DeleteCategory(ctx context.Context, categoryID string) error {
+func (r *CategoryRepo) DeleteCategory(ctx context.Context, categoryID entity.Id) error {
 	query, args, err := r.pg.Builder.
 		Delete("categories").
 		Where("id = ?", categoryID).

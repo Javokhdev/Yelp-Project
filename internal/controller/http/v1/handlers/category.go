@@ -7,16 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type CategoryHandler struct {
-	categoryService services.CategoryService
-}
-
-func NewCategoryHandler(categoryService *services.CategoryService) *CategoryHandler {
-	return &CategoryHandler{
-		categoryService: *categoryService,
-	}
-}
-
 // CreateCategory godoc
 // @Summary      Create a new category
 // @Description  Create a new category
@@ -27,13 +17,13 @@ func NewCategoryHandler(categoryService *services.CategoryService) *CategoryHand
 // @Success      200  {object}  string
 // @Failure      400  {object}  string
 // @Router       /categories [post]
-func (handler *CategoryHandler) CreateCategory(c *gin.Context) {
+func (h *Handler) CreateCategory(c *gin.Context) {
 	var category entity.Category
 	if err := c.ShouldBindJSON(&category); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	categoryID, err := handler.categoryService.CreateCategory(&category)
+	categoryID, err := h.UseCase.CategoryRepo.CreateCategory(c, &category)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -50,8 +40,8 @@ func (handler *CategoryHandler) CreateCategory(c *gin.Context) {
 // @Success      200  {object}  []entity.Category
 // @Failure      400  {object}  string
 // @Router       /categories [get]
-func (handler *CategoryHandler) GetAllCategories(c *gin.Context) {
-	categories, err := handler.categoryService.GetAllCategories()
+func (h *Handler) GetAllCategories(c *gin.Context) {
+	categories, err := h.UseCase.CategoryRepo.GetAllCategories(c)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -69,9 +59,13 @@ func (handler *CategoryHandler) GetAllCategories(c *gin.Context) {
 // @Success      200  {object}  entity.Category
 // @Failure      400  {object}  string
 // @Router       /categories/{categoryID} [get]
-func (handler *CategoryHandler) GetCategoryByID(c *gin.Context) {
-	categoryID := c.Param("categoryID")
-	category, err := handler.categoryService.GetCategoryByID(categoryID)
+func (h *Handler) GetCategoryByID(c *gin.Context) {
+	var (
+		req entity.Id
+	)
+	req.ID = c.Param("categoryID")
+
+	category, err := h.UseCase.CategoryRepo.GetCategoryByID(c, req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -90,13 +84,13 @@ func (handler *CategoryHandler) GetCategoryByID(c *gin.Context) {
 // @Failure      400  {object}  string
 // @Failure      500  {object}  string
 // @Router       /categories [put]	
-func (handler *CategoryHandler) UpdateCategory(c *gin.Context) {
+func (h *Handler) UpdateCategory(c *gin.Context) {
 	var category entity.Category
 	if err := c.ShouldBindJSON(&category); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := handler.categoryService.UpdateCategory(&category); err != nil {
+	if err := h.UseCase.CategoryRepo.UpdateCategory(c, &category); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -114,9 +108,12 @@ func (handler *CategoryHandler) UpdateCategory(c *gin.Context) {
 // @Failure      400  {object}  string
 // @Failure      500  {object}  string
 // @Router       /categories/{categoryID} [delete]
-func (handler *CategoryHandler) DeleteCategory(c *gin.Context) {
-	categoryID := c.Param("categoryID")
-	if err := handler.categoryService.DeleteCategory(categoryID); err != nil {
+func (h *Handler) DeleteCategory(c *gin.Context) {
+	var (
+		req entity.Id
+	)
+	req.ID = c.Param("categoryID")
+	if err := h.UseCase.CategoryRepo.DeleteCategory(c, req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}

@@ -13,6 +13,7 @@ type UseCase struct {
 	SessionRepo SessionRepoI
 	BusinessRepo BusinessI
 	ReviewRepo ReviewI
+	CategoryRepo CategoryRepoI
 }
 
 // New -.
@@ -22,6 +23,6 @@ func New(pg *postgres.Postgres, config *config.Config, logger *logger.Logger) *U
 		SessionRepo: repositories.NewSessionRepo(pg, config, logger),
 		BusinessRepo: repositories.NewBusinessRepo(pg, config, logger),
 		ReviewRepo: repositories.NewReviewRepo(pg, config, logger),
-		
+		CategoryRepo: repositories.NewCategoryRepo(pg, config, logger),
 	}
 }

@@ -548,6 +548,44 @@ const docTemplate = `{
                 }
             }
         },
+        "/rating/{id}": {
+            "get": {
+                "description": "Get rating by business ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Rating"
+                ],
+                "summary": "Get rating by business ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Business ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/entity.Rating"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/review": {
             "get": {
                 "description": "Get all reviews",
@@ -1227,6 +1265,22 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string"
+                }
+            }
+        },
+        "entity.Rating": {
+            "type": "object",
+            "properties": {
+                "avgRating": {
+                    "description": "Average rating",
+                    "type": "number"
+                },
+                "businessID": {
+                    "description": "Foreign key to Business",
+                    "type": "string"
+                },
+                "totalRatings": {
+                    "type": "integer"
                 }
             }
         },

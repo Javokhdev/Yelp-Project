@@ -45,4 +45,12 @@ type (
 		Delete(ctx context.Context, req entity.Id) error
 		UpdateField(ctx context.Context, req entity.UpdateFieldRequest) (entity.RowsEffected, error)
 	}
+
+	CategoryRepoI interface {
+		CreateCategory(ctx context.Context, req *entity.Category) (string, error)
+		GetAllCategories(ctx context.Context) ([]*entity.Category, error)
+		GetCategoryByID(ctx context.Context, req entity.Id) (*entity.Category, error)
+		UpdateCategory(ctx context.Context, req *entity.Category) (error)
+		DeleteCategory(ctx context.Context, req entity.Id) error
+	}
 )

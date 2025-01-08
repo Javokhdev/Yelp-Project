@@ -77,4 +77,34 @@ func NewRouter(engine *gin.Engine, l *logger.Logger, config *config.Config, useC
 		auth.POST("/verify-email", handlerV1.VerifyEmail)
 		auth.POST("/login", handlerV1.Login)
 	}
+
+	business := v1.Group("/business")
+	{
+		business.POST("/", handlerV1.CreateBusiness)
+		business.GET("/list", handlerV1.GetAllBusinesses)
+		business.GET("/:id", handlerV1.GetBusinessByID)
+		business.PUT("/", handlerV1.UpdateBusiness)
+		business.DELETE("/:id", handlerV1.DeleteBusiness)
+	}
+
+	review := v1.Group("/review")
+	{
+		review.POST("/", handlerV1.CreateReview)
+		review.GET("/list", handlerV1.GetAllReviews)
+		review.GET("/:id", handlerV1.GetReviewByID)
+		review.PUT("/", handlerV1.UpdateReview)
+		review.DELETE("/:id", handlerV1.DeleteReview)
+		review.GET("/rating/:id", handlerV1.GetRatingByBusinessID)
+	}
+
+	category := v1.Group("/category")
+	{
+		category.POST("/", handlerV1.CreateCategory)
+		category.GET("/list", handlerV1.GetAllCategories)
+		category.GET("/:id", handlerV1.GetCategoryByID)
+		category.PUT("/", handlerV1.UpdateCategory)
+		category.DELETE("/:id", handlerV1.DeleteCategory)
+	}
+
+	
 }

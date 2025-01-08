@@ -75,7 +75,7 @@ bin-deps:
 	GOBIN=$(LOCAL_BIN) go install github.com/golang/mock/mockgen@latest
 
 run-db: 
-	docker network create udevslabs-twitter & docker-compose -f ./devops/docker-compose.yml up -d 
+	docker network create yalp-md & docker-compose -f ./devops/docker-compose.yml up -d 
 
 stop-db:
 	docker-compose -f ./devops/docker-compose.yml down
